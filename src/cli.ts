@@ -2,7 +2,7 @@
 
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { Analyzer } from 'haircare-ingredients-analyzer';
+import { Analyzer, CategoryGroup } from 'haircare-ingredients-analyzer';
 import { ingredients } from './data/ingredients';
 import { categories } from './data/categories';
 
@@ -24,6 +24,15 @@ function getImpactColor(impact: 'good' | 'caution' | 'bad' | 'unknown' | 'neutra
     default:
       return chalk.white;
   }
+}
+
+function findCategoryGroup(categoryName: string): string {
+  for (const group of Object.values(categories)) {
+    if (categoryName in (group as CategoryGroup).categories) {
+      return group.name;
+    }
+  }
+  return 'Other';
 }
 
 program
@@ -95,7 +104,7 @@ program
 
         console.log();
       } else {
-        console.log(chalk.red('✗'), chalk.bold(result.name), '- No match found\n');
+        console.log(chalk.blue('?'), chalk.bold(result.name), '- Unknown ingredient\n');
       }
     });
 
@@ -110,35 +119,47 @@ program
     console.log(`Unmatched ingredients: ${totalCount - matchedCount}`);
 
     // Category Summary
-    if (analysis.categories.length > 0) {
-      console.log(chalk.bold('\nCategories Found:'));
+    console.log(chalk.bold('\nCategories Found:'));
 
+    if (analysis.categories && analysis.categories.length > 0) {
       // Group categories by their group
       const categoriesByGroup = new Map<string, string[]>();
 
       analysis.categories.forEach(categoryName => {
-        const groupName = analyzer.getCategoryGroup(categoryName);
-        if (groupName) {
-          if (!categoriesByGroup.has(groupName)) {
-            categoriesByGroup.set(groupName, []);
-          }
-          categoriesByGroup.get(groupName)!.push(categoryName);
+        const groupName = findCategoryGroup(categoryName);
+        if (!categoriesByGroup.has(groupName)) {
+          categoriesByGroup.set(groupName, []);
         }
+        categoriesByGroup.get(groupName)!.push(categoryName);
       });
 
       // Display grouped categories with impact indicators
-      categoriesByGroup.forEach((categories, groupName) => {
-        console.log(chalk.bold(`\n${groupName}:`));
-        categories.forEach(categoryName => {
-          const info = analyzer.getCategoryInfo(categoryName);
-          if (info) {
-            const impactColor = getImpactColor(info.impact);
-            console.log(`  • ${info.name} ${impactColor(`[${info.impact}]`)}`);
-          } else {
-            console.log(`  • ${categoryName}`);
-          }
+      if (categoriesByGroup.size === 0) {
+        console.log(chalk.yellow('No categories found for matched ingredients.'));
+      } else {
+        categoriesByGroup.forEach((categories, groupName) => {
+          console.log(chalk.bold(`\n${groupName}:`));
+          categories.forEach(categoryName => {
+            let categoryInfo = null;
+            for (const group of Object.values(categories)) {
+              const typedGroup = (group as unknown) as CategoryGroup;
+              if (group && typedGroup.categories && categoryName in typedGroup.categories) {
+                categoryInfo = typedGroup.categories[categoryName];
+                break;
+              }
+            }
+
+            if (categoryInfo) {
+              const impactColor = getImpactColor(categoryInfo.impact);
+              console.log(`  • ${categoryInfo.name} ${impactColor(`[${categoryInfo.impact}]`)}`);
+            } else {
+              console.log(`  • ${categoryName}`);
+            }
+          });
         });
-      });
+      }
+    } else {
+      console.log(chalk.yellow('No categories found for matched ingredients.'));
     }
 
     console.log();

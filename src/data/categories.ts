@@ -108,6 +108,12 @@ export const categories: CategoryGroups = {
         description: "Ingredients that modify product pH",
         impact: "good",
         notes: "Important for maintaining proper hair and scalp pH"
+      },
+      "preservative": {
+        name: "Preservative",
+        description: "Ingredients that prevent spoilage",
+        impact: "good",
+        notes: "Commonly used in hair care products"
       }
     }
   }

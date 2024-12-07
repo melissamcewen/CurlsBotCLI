@@ -8,7 +8,8 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "rootDir": "./src"
+    "rootDir": "./src",
+    "types": ["node", "jest", "haircare-ingredients-analyzer"]
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "demo"]
